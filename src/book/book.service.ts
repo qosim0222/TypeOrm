@@ -1,34 +1,82 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
-import { Book } from './entites/book.entities';
-import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Book } from './entites/book.entities';
+import { Author } from 'src/author/entities/author.entity';
 
 @Injectable()
 export class BookService {
   constructor(
-    @InjectRepository(Book)
-    private bookrepo: Repository<Book>,
+    @InjectRepository(Book) private book: Repository<Book>,
+    @InjectRepository(Author) private author: Repository<Author>,
   ) {}
-  create(createBookDto: CreateBookDto) {
-   const newbook = this.bookrepo.create(createBookDto);
-   return this.bookrepo.save(newbook)
+
+  async create(createBookDto: CreateBookDto) {
+    let { author, ...data } = createBookDto;
+    try {
+      let found = await this.author.findOne({ where: { id: author } });
+
+      if (!found) {
+        return new NotFoundException('Not found author');
+      }
+
+      let book = this.book.create(data);
+      await this.book.save(book);
+
+      if (found.books) {
+        found.books.push(book);
+      } else {
+        found.books = [book];
+      }
+
+      await this.author.save(found);
+      return { data: book };
+    } catch (error) {
+      return new BadRequestException(error.message);
+    }
   }
 
   findAll() {
-    return this.bookrepo.find();
+    return this.book.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} book`;
+  async findOne(id: number) {
+    try {
+      let book = await this.book.findOne({ where: { id } });
+      if (!book) {
+        return new NotFoundException('Not found book');
+      }
+
+      return { data: book };
+    } catch (error) {
+      return new BadRequestException(error.message);
+    }
   }
 
-  update(id: number, updateBookDto: UpdateBookDto) {
-    return `This action updates a #${id} book`;
+  async update(id: number, updateBookDto: UpdateBookDto) {
+    try {
+      let book = await this.book.findOne({ where: { id } });
+      if (!book) {
+        return new NotFoundException('Not found book');
+      }
+      return this.book.save(book);
+    } catch (error) {
+      return new BadRequestException(error.message);
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} book`;
+  async remove(id: number) {
+    let data = await this.book.findOne({ where: { id } });
+    if (!data) {
+      return new NotFoundException('Not found book');
+    }
+    await this.book.delete(id);
+    return { data };
   }
 }

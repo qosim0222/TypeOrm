@@ -1,16 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
-export class CreateBookDto {
-  @ApiProperty({ example: 'harry poter' })
+export class CreateProfilDto {
+  @ApiProperty({ example: 'kimdur@gmail.com' })
   @IsNotEmpty()
   @IsString()
-  name: string;
+  email: string;
 
-  @ApiProperty({ example: 1995 })
+  @ApiProperty({ example: '991234567' })
   @IsNotEmpty()
-  @IsNumber()
-  year: number;
+  @IsString()
+  phone: string;
 
   @ApiProperty({ example: 1 })
   @IsNotEmpty()
